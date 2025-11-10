@@ -1,5 +1,4 @@
-# FINAL DEFINITIVE VERSION FOR DOKPLOY
-# Builds from source for ARM64 and hardcodes all environment variables.
+# FINAL NUCLEAR OPTION VERSION
 
 services:
   playwright-service:
@@ -8,17 +7,14 @@ services:
 
   api:
     build: ./apps/api
-    entrypoint: ["node"]
-    command: ["dist/src/harness.js"]
+    # We can now use the command directly because we removed the ENTRYPOINT from the Dockerfile
+    command: ["node", "dist/src/harness.js"]
     environment:
-      # --- Hardcoding all required variables ---
       DATABASE_URL: "postgres://postgres:postgres@nuq-postgres:5432/postgres"
       NUQ_DATABASE_URL: "postgres://postgres:postgres@nuq-postgres:5432/postgres"
       REDIS_URL: "redis://redis:6379"
       PLAYWRIGHT_MICROSERVICE_URL: "http://playwright-service:3000/scrape"
-      # Set a secure key here for production
-      BULL_AUTH_KEY: "dc480ab364df4b36e394cdf0ccb4bad56baab21e66f13b502088cc56bb5186c9"
-      # Tell the app not to use external DB auth
+      BULL_AUTH_KEY: "CHANGEME"
       USE_DB_AUTHENTICATION: "false"
       PORT: "3002"
       HOST: "0.0.0.0"
