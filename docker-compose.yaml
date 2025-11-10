@@ -21,7 +21,7 @@ services:
       - playwright-service
       - nuq-postgres
     # No 'ports' or 'labels' section. Dokploy handles this.
-    command: ["harness", "--start-built"]
+    command: ["node", "dist/src/harness.js"]
     restart: unless-stopped
 
   redis:
