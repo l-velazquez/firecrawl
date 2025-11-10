@@ -1,64 +1,8 @@
-# Recommended docker-compose.yml for Dokploy deployment of Firecrawl
-
-version: '3.8'
-
-# Common service configurations
-x-common-service: &common-service
-  build: # Builds the service locally from its specified path
-    context: .
-    dockerfile: apps/api/Dockerfile # Specify the Dockerfile path relative to the compose file
-  ulimits:
-    nofile:
-      soft: 65535
-      hard: 65535
-  networks:
-    - dokploy-network # Connect to Dokploy's managed network
-  # extra_hosts is usually not needed in Dokploy; Traefik and internal DNS handle this.
-  # If you encounter issues, consider adding it back specifically if you need to reach
-  # the host machine from within the container.
-
-# Common environment variables.
-# Values for these will primarily be set in the Dokploy UI for better management and security.
-x-common-env: &common-env
-  REDIS_URL: redis://redis:6379 # Points to the 'redis' service on the Dokploy network
-  REDIS_RATE_LIMIT_URL: redis://redis:6379
-  PLAYWRIGHT_MICROSERVICE_URL: http://playwright-service:3000/scrape # Points to 'playwright-service'
-  NUQ_DATABASE_URL: postgres://postgres:postgres@nuq-postgres:5432/postgres # Points to 'nuq-postgres'
-  # All other environment variables should be configured via Dokploy UI for flexibility/secrets
-  HOST: "0.0.0.0" # CRITICAL: Allows the app to listen on all interfaces for proxy connections
-  PORT: 3002 # Firecrawl API listens on 3002 inside the container
-  EXTRACT_WORKER_PORT: 3004
-  WORKER_PORT: 3005
-  ENV: production # Set for a deployed environment
-  # The following should be defined in Dokploy UI's "Environment Variables" section:
-  # USE_DB_AUTHENTICATION
-  # OPENAI_API_KEY
-  # OPENAI_BASE_URL
-  # MODEL_NAME
-  # MODEL_EMBEDDING_NAME
-  # OLLAMA_BASE_URL
-  # SLACK_WEBHOOK_URL
-  # BULL_AUTH_KEY # Required for admin UI
-  # TEST_API_KEY
-  # POSTHOG_API_KEY
-  # POSTHOG_HOST
-  # SUPABASE_ANON_TOKEN
-  # SUPABASE_URL
-  # SUPABASE_SERVICE_TOKEN
-  # SELF_HOSTED_WEBHOOK_URL
-  # SERPER_API_KEY
-  # SEARCHAPI_API_KEY
-  # LOGGING_LEVEL
-  # PROXY_SERVER
-  # PROXY_USERNAME
-  # PROXY_PASSWORD
-  # SEARXNG_ENDPOINT
-  # SEARXNG_ENGINES
-  # SEARXNG_CATEGORIES
+# This is the complete and final docker-compose.yml for your Firecrawl project on Dokploy.
 
 services:
   playwright-service:
-    build: ./apps/playwright-service-ts # <<< FIX: Correct build context
+    build: ./apps/playwright-service-ts
     environment:
       PORT: 3000
     networks:
@@ -66,11 +10,11 @@ services:
     restart: unless-stopped
 
   api:
-    build: ./apps/api # <<< FIX: Correct build context
+    build: ./apps/api
     environment:
-      # All environment variables should be configured via Dokploy UI
-      # See the "Environment Variables" section in Dokploy for what to add.
-      # Example: REDIS_URL: redis://redis:6379, etc.
+      # These are basic, non-secret variables.
+      # All other variables (REDIS_URL, BULL_AUTH_KEY, API keys, etc.)
+      # MUST be set in the Dokploy UI's "Environment Variables" section.
       HOST: "0.0.0.0"
       PORT: 3002
     depends_on:
@@ -98,7 +42,7 @@ services:
       - ../files/firecrawl-redis-data:/data
 
   nuq-postgres:
-    build: ./apps/nuq-postgres # <<< FIX: Correct build context
+    build: ./apps/nuq-postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
