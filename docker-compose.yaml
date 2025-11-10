@@ -1,4 +1,5 @@
-# FINAL VERSION FOR DOKPLOY
+# FINAL, DEFINITIVE VERSION FOR DOKPLOY
+# This version overrides the Dockerfile's entrypoint to ensure the correct script is run.
 
 services:
   playwright-service:
@@ -7,12 +8,16 @@ services:
 
   api:
     build: ./apps/api
+    # --- THIS IS THE FIX ---
+    # We are overriding the default "pnpm" entrypoint to call "node" directly.
+    entrypoint: ["node"]
+    # And we are telling node which file to run.
+    command: ["dist/src/harness.js"]
+    # -----------------------
     depends_on:
       - redis
       - playwright-service
       - nuq-postgres
-    # This command tells Node to run the correct script at its compiled location.
-    command: ["node", "dist/src/harness.js"]
     restart: unless-stopped
 
   redis:
