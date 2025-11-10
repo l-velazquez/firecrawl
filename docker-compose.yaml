@@ -1,19 +1,18 @@
-# This is the complete and final docker-compose.yml for your Firecrawl project on Dokploy.
+# This is the corrected docker-compose.yml for a Dokploy deployment.
+# It removes all manual networking, labels, and port exposure,
+# allowing Dokploy to manage them automatically.
 
 services:
   playwright-service:
     build: ./apps/playwright-service-ts
     environment:
       PORT: 3000
-    networks:
-      - dokploy-network
     restart: unless-stopped
 
   api:
     build: ./apps/api
     environment:
-      # These are basic, non-secret variables.
-      # All other variables (REDIS_URL, BULL_AUTH_KEY, API keys, etc.)
+      # All secret variables (DATABASE_URL, REDIS_URL, etc.)
       # MUST be set in the Dokploy UI's "Environment Variables" section.
       HOST: "0.0.0.0"
       PORT: 3002
@@ -21,25 +20,17 @@ services:
       - redis
       - playwright-service
       - nuq-postgres
-    ports:
-      - "3002"
+    # No 'ports' or 'labels' section. Dokploy handles this.
     command: node dist/src/harness.js --start-docker
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.firecrawl.rule=Host(`firecrawl.lvelazquez.cc`)"
-      - "traefik.http.services.firecrawl.loadbalancer.server.port=3002"
     restart: unless-stopped
-    networks:
-      - dokploy-network
 
   redis:
     image: redis:alpine
     restart: unless-stopped
-    networks:
-      - dokploy-network
     command: redis-server --bind 0.0.0.0
+    # Using a named volume for persistent data
     volumes:
-      - ../files/firecrawl-redis-data:/data
+      - firecrawl-redis-data:/data
 
   nuq-postgres:
     build: ./apps/nuq-postgres
@@ -47,12 +38,12 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: postgres
-    networks:
-      - dokploy-network
+    # Using a named volume for persistent data
     volumes:
-      - ../files/firecrawl-postgres-data:/var/lib/postgresql/data
+      - firecrawl-postgres-data:/var/lib/postgresql/data
     restart: unless-stopped
 
-networks:
-  dokploy-network:
-    external: true
+# Define the named volumes that Dokploy will create and manage.
+volumes:
+  firecrawl-redis-data:
+  firecrawl-postgres-data:
