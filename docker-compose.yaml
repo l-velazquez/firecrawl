@@ -1,19 +1,16 @@
-# FINAL, DEFINITIVE VERSION FOR DOKPLOY
-# This version overrides the Dockerfile's entrypoint to ensure the correct script is run.
+# FINAL DEFINITIVE VERSION FOR DOKPLOY
+# This version uses pre-built official images to bypass build issues.
 
 services:
   playwright-service:
-    build: ./apps/playwright-service-ts
+    # Use the official pre-built image
+    image: ghcr.io/firecrawl/playwright-service:latest
     restart: unless-stopped
 
   api:
-    build: ./apps/api
-    # --- THIS IS THE FIX ---
-    # We are overriding the default "pnpm" entrypoint to call "node" directly.
-    entrypoint: ["node"]
-    # And we are telling node which file to run.
-    command: ["dist/src/harness.js"]
-    # -----------------------
+    # Use the official pre-built image
+    image: ghcr.io/firecrawl/firecrawl:latest
+    # No 'command' or 'entrypoint' needed. We will use the image's default.
     depends_on:
       - redis
       - playwright-service
@@ -28,6 +25,7 @@ services:
       - firecrawl-redis-data:/data
 
   nuq-postgres:
+    # We still build the postgres service as it's a custom setup
     build: ./apps/nuq-postgres
     environment:
       POSTGRES_USER: postgres
