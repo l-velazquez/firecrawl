@@ -1,16 +1,18 @@
-# FINAL DEFINITIVE VERSION FOR DOKPLOY
-# This version uses pre-built official images to bypass build issues.
+# FINAL DEFINITIVE VERSION - BUILDS FROM SOURCE FOR ARM64
 
 services:
   playwright-service:
-    # Use the official pre-built image
-    image: ghcr.io/firecrawl/playwright-service:latest
+    # We must build this service from source for ARM64 compatibility
+    build: ./apps/playwright-service-ts
     restart: unless-stopped
 
   api:
-    # Use the official pre-built image
-    image: ghcr.io/firecrawl/firecrawl:latest
-    # No 'command' or 'entrypoint' needed. We will use the image's default.
+    # We must build this service from source for ARM64 compatibility
+    build: ./apps/api
+    # We override the Dockerfile's entrypoint to ensure the correct command is run
+    entrypoint: ["node"]
+    # We provide the correct path to the compiled startup script
+    command: ["dist/src/harness.js"]
     depends_on:
       - redis
       - playwright-service
@@ -18,6 +20,7 @@ services:
     restart: unless-stopped
 
   redis:
+    # The official redis:alpine image supports ARM64
     image: redis:alpine
     restart: unless-stopped
     command: redis-server --bind 0.0.0.0
@@ -25,7 +28,7 @@ services:
       - firecrawl-redis-data:/data
 
   nuq-postgres:
-    # We still build the postgres service as it's a custom setup
+    # We build this service from source
     build: ./apps/nuq-postgres
     environment:
       POSTGRES_USER: postgres
