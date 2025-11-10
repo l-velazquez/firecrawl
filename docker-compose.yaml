@@ -1,4 +1,5 @@
-# FINAL DEFINITIVE VERSION - SETS ENV VAR IN COMPOSE
+# FINAL DEFINITIVE VERSION FOR DOKPLOY
+# Builds from source for ARM64 and hardcodes all environment variables.
 
 services:
   playwright-service:
@@ -9,12 +10,18 @@ services:
     build: ./apps/api
     entrypoint: ["node"]
     command: ["dist/src/harness.js"]
-    # --- THIS IS THE FIX ---
-    # We are forcing the database URL directly into the container's environment.
     environment:
+      # --- Hardcoding all required variables ---
       DATABASE_URL: "postgres://postgres:postgres@nuq-postgres:5432/postgres"
       NUQ_DATABASE_URL: "postgres://postgres:postgres@nuq-postgres:5432/postgres"
-    # -----------------------
+      REDIS_URL: "redis://redis:6379"
+      PLAYWRIGHT_MICROSERVICE_URL: "http://playwright-service:3000/scrape"
+      # Set a secure key here for production
+      BULL_AUTH_KEY: "dc480ab364df4b36e394cdf0ccb4bad56baab21e66f13b502088cc56bb5186c9"
+      # Tell the app not to use external DB auth
+      USE_DB_AUTHENTICATION: "false"
+      PORT: "3002"
+      HOST: "0.0.0.0"
     depends_on:
       - redis
       - playwright-service
@@ -32,7 +39,7 @@ services:
     build: ./apps/nuq-postgres
     environment:
       POSTGRES_USER: postgres
-      POSTG-RES_PASSWORD: postgres
+      POSTGRES_PASSWORD: postgres
       POSTGRES_DB: postgres
     restart: unless-stopped
     volumes:
