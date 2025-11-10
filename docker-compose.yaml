@@ -58,67 +58,57 @@ x-common-env: &common-env
 
 services:
   playwright-service:
-    build: # Specify Dockerfile path for Playwright service
-      context: .
-      dockerfile: apps/playwright-service-ts/Dockerfile
+    build: ./apps/playwright-service-ts # <<< FIX: Correct build context
     environment:
       PORT: 3000
-      # These should also be defined in Dokploy UI if needed for Playwright service directly
-      # PROXY_SERVER
-      # PROXY_USERNAME
-      # PROXY_PASSWORD
-      # BLOCK_MEDIA
     networks:
-      - dokploy-network # Connect to Dokploy's managed network
-    # No external ports are exposed for Playwright service
+      - dokploy-network
+    restart: unless-stopped
 
   api:
-    <<: *common-service
+    build: ./apps/api # <<< FIX: Correct build context
     environment:
-      <<: *common-env # Includes all common env vars from above
-      # Overrides or additional specific env vars for the API service:
-      # These values should now align with the x-common-env or be set in Dokploy UI
+      # All environment variables should be configured via Dokploy UI
+      # See the "Environment Variables" section in Dokploy for what to add.
+      # Example: REDIS_URL: redis://redis:6379, etc.
+      HOST: "0.0.0.0"
+      PORT: 3002
     depends_on:
       - redis
       - playwright-service
-      - nuq-postgres # Ensure API waits for Postgres as well
+      - nuq-postgres
     ports:
-      # Expose only the container port for internal Traefik routing.
-      # Dokploy's Traefik will map the external port 80/443 to this internal port 3002.
       - "3002"
     command: node dist/src/harness.js --start-docker
-    labels: # <<< CRITICAL: ADD THESE TRAEFIK LABELS FOR DOKPLOY ROUTING
+    labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.firecrawl.rule=Host(`firecrawl.lvelazquez.cc`)" # Your Firecrawl domain
-      - "traefik.http.services.firecrawl.loadbalancer.server.port=3002" # Target the API service's internal port
+      - "traefik.http.routers.firecrawl.rule=Host(`firecrawl.lvelazquez.cc`)"
+      - "traefik.http.services.firecrawl.loadbalancer.server.port=3002"
+    restart: unless-stopped
+    networks:
+      - dokploy-network
 
   redis:
     image: redis:alpine
     restart: unless-stopped
     networks:
-      - dokploy-network # Connect to Dokploy's managed network
-    command: redis-server --bind 0.0.0.0 # Binds to all interfaces inside the container
+      - dokploy-network
+    command: redis-server --bind 0.0.0.0
     volumes:
-      # Add persistent volume for Redis data using Dokploy's convention
       - ../files/firecrawl-redis-data:/data
 
   nuq-postgres:
-    build: # Specify Dockerfile path for Postgres service
-      context: .
-      dockerfile: apps/nuq-postgres/Dockerfile
+    build: ./apps/nuq-postgres # <<< FIX: Correct build context
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: postgres
     networks:
-      - dokploy-network # Connect to Dokploy's managed network
-    # Remove external port binding for Postgres; it's typically internal
-    # ports:
-    #   - "5432:5432"
+      - dokploy-network
     volumes:
-      # Add persistent volume for Postgres data using Dokploy's convention
       - ../files/firecrawl-postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
 
 networks:
   dokploy-network:
-    external: true # Indicates Dokploy manages this network
+    external: true
